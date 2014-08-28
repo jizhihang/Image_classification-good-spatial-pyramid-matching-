@@ -14,6 +14,7 @@ suffix = feature_option.suffix;
 for c = 1:length(subfolders),
     class_name = subfolders(c).name;
     if ~strcmp(class_name,'.') & ~strcmp(class_name,'..')   % the folder is real image folder
+        fprintf('start processing %s...\n',class_name);
         database.num_class = database.num_class + 1;
         database.class_name{database.num_class} = class_name;
 
@@ -40,7 +41,9 @@ for c = 1:length(subfolders),
                 image = imresize(image,feature_option.max_size/max(im_h,im_w),'bicubic');
                 [im_h,im_w] = size(image);
             end
+            
             [position,des] = vl_dsift(image,'step',3);
+%             [position,des] = vl_sift(image);
             feature.x = position(1,:);
             feature.y = position(2,:);
             feature.data = des;

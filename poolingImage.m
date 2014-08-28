@@ -1,6 +1,7 @@
 function pooling_sig = poolingImage(idx_database,pooling_option)
 % pooling image using the spatial pyramid matching
 
+fprintf('spatial pooling for features...\n');
 dic_dim = pooling_option.dic_dim;
 pyramid = pooling_option.pyramid;
 num_pic = length(idx_database.feature_path);
@@ -41,7 +42,7 @@ for i = 1:num_pic
             end
             % here compute the signature on visual vocabulary
             p_idx_data = data(s_idx_bin,:);
-            pic_pooling_sig(:,b_id) = histc(p_idx_data,1:dic_dim);    % 
+            pic_pooling_sig(:,b_id) = histc(p_idx_data,1:dic_dim);%./length(p_idx_data);    % 
         end
     end
     

@@ -2,7 +2,7 @@ function idx_database = assignmentIndexFeature(database,data_dir,assignment_opti
 % This function calculate the feature signature for the data
 
 idx_database = database;
-idx_database.idx_path = {};
+idx_database.feature_path = {};
 suffix = assignment_option.suffix;
 dictionary = assignment_option.dictionary;
 num_vac = size(dictionary,1);
@@ -19,7 +19,13 @@ for i = 1:length(database.feature_path)
     idx = findClosestCentroids(double(feature.data'),dictionary);   % assignment the index for the feature
     idx_sig.data = idx;
     save(idx_path,'idx_sig');
-    idx_database.idx_path = [idx_database.idx_path;idx_path];
+    idx_database.feature_path = [idx_database.feature_path;idx_path];
+    if mod(i,20)==0
+        fprintf('.');
+        if mod(i,200)==0
+            fprintf('\n');
+        end
+    end
 end
 
 end % end function
