@@ -4,7 +4,7 @@ clear;clc;  % clear
 
 image_dir = 'image';
 data_dir = 'data';
-dataname = 'test';
+dataname = 'scene_categories';
 image_dir = fullfile(image_dir,dataname);
 data_dir = fullfile(data_dir,dataname);
 dic_dir = 'data/dic';
@@ -15,6 +15,7 @@ skip_dic_training = true;
 skip_spm_sig = true;
 
 %------------- calculate the sift feature for the image ------------------%
+fprintf('The feature extraction...\n');
 feature_option.max_size = 1000;
 feature_option.suffix = '_sift';
 if ~skip_sift
@@ -24,8 +25,9 @@ else
 end
 
 %------------ using cluster to get a visual word dictionary --------------%
-dic_option.max_num = 10000;
-dic_option.dic_img_num = 5;
+fprintf('The dictionary training...\n');
+dic_option.max_num = 100000;
+dic_option.dic_img_num = 50;
 dic_option.k = 200;
 dic_option.max_iters = 50;
 dic_path = fullfile(dic_dir,[dataname,'_',num2str(dic_option.max_num),'_',num2str(dic_option.k),feature_option.suffix,'.mat']);
@@ -39,6 +41,7 @@ else
     load(dic_path);
 end
 %------------ compute the index for every visual feature -----------------%
+fprintf('The index assignment...\n');
 assignment_option.dictionary = dictionary;
 assignment_option.suffix = '_idx';
 if ~skip_idx_sig
@@ -57,6 +60,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % compile the spatial pyramid for the image
+fprintf('The spm signature computing...\n');
 spm.suffix = '_spm';
 spm.pyramid_level = 3;
 spm.dic_wc = 200;
@@ -75,7 +79,8 @@ end
 
 %------------ svm training and test --------------------------------------%
 % select the training and testing data
-tr_num_per_class = 1;   % training size per class
+fprintf('The classifier training...\n');
+tr_num_per_class = 100;   % training size per class
 [num_sig,sig_dim] = size(spm_sig);
 train_data = zeros(tr_num_per_class*idx_database.num_class,sig_dim);
 test_data = zeros(num_sig-tr_num_per_class*idx_database.num_class,sig_dim);
@@ -98,8 +103,14 @@ for i = 1:idx_database.num_class
 end
 
 %--------------- train and test the svm ----------------------------------%
-model = svmtrain(train_label,train_data);
-[predict_label,accuracy,dec_values] = svmpredict(test_label,test_data,model);
+tr_num = size(train_data,1);
+ts_num = size(test_data,1);
+tr_tr_kernel_mat = computeKernelMat(train_data,train_data);
+ts_tr_kernel_mat = computeKernelMat(test_data,train_data);
+model = svmtrain(train_label,[(1:tr_num)',tr_tr_kernel_mat],'-t 4');
+
+fprintf('The test running...\n');
+[predict_label,accuracy,dec_values] = svmpredict(test_label,[(1:ts_num)',ts_tr_kernel_mat],model);
 
 
 
