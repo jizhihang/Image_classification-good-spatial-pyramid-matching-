@@ -42,19 +42,37 @@ for c = 1:length(subfolders),
                 [im_h,im_w] = size(image);
             end
             
-            [position,des] = vl_dsift(image,'step',3);
-%             [position,des] = vl_sift(image);
-            feature.x = position(1,:);
-            feature.y = position(2,:);
-            feature.data = des;
-            feature.width = im_w;
-            feature.height = im_h;
-            
-            [~,img_name,~] = fileparts(images(i).name);
-            feature_path = fullfile(feature_dir,[img_name,suffix,'.mat']);
-            save(feature_path,'feature');
-            database.feature_path = [database.feature_path;feature_path];
-%             database.img_path = [database.img_path;img_path];
+            if(strcmp(suffix,'_sift'))
+%                 [position,des] = vl_dsift(image,'step',3);
+                [position,des] = vl_sift(image);
+                feature.x = position(1,:);
+                feature.y = position(2,:);
+                feature.data = des;
+                feature.width = im_w;
+                feature.height = im_h;
+
+                [~,img_name,~] = fileparts(images(i).name);
+                feature_path = fullfile(feature_dir,[img_name,suffix,'.mat']);
+                save(feature_path,'feature');
+                database.feature_path = [database.feature_path;feature_path];
+            elseif(strcmp(suffix,'_dsift'))
+                [position,des] = vl_dsift(image,'step',3);
+                feature.x = position(1,:);
+                feature.y = position(2,:);
+                feature.data = des;
+                feature.width = im_w;
+                feature.height = im_h;
+
+                [~,img_name,~] = fileparts(images(i).name);
+                feature_path = fullfile(feature_dir,[img_name,suffix,'.mat']);
+                save(feature_path,'feature');
+                database.feature_path = [database.feature_path;feature_path];
+            elseif(strcmp(suffix,'_lbp'))
+                fprintf('extract lbp feature...\n');
+            else
+                fprintf('unsupported feature suffix %s\n',suffix);
+            end
+
         end
     end
 end
