@@ -1,22 +1,25 @@
-function chi_square = featureSelection( wordsAll,labels )
+function valid_word_ids = featureSelection( wordsAll,labels,num_per_class)
 % This is the visual feature selection using chi-square
 % details at http://www.blogjava.net/zhenandaci/archive/2008/08/31/225966.html
 % 
+% 
 % @param wordsAll : a words_num X img_num matrix ,where each column is a
 %                    representation for the image X in the feature space
-%
 % @param labels : a img_num X 1 vector to for the image labels
-% @return chi_square : a words_num X class_num matrix ,the element (i,j) in
-%                  this matrix is the chi-square value words(i) for class(j)
+% @param num_per_class : the select number for per class
+%
+% @return valid_word_ids : a n X 1 vector contains the id for the right words
 
-[words_num,~] = size(wordsAll);
+[words_num,img_num] = size(wordsAll);
 label_id = unique(labels);
 class_num = length(label_id);
-
 boolArray = wordsAll>0;
 
-chi_square = zeros(words_num,class_num);
+method = 'chi-square';  % method can be chi-square or info-gain
 
+% ------- choose the class related visual words by chi-square-------------%
+% the element (i,j) in this matrix is the chi-square value words(i) for class(j)
+chi_square = zeros(words_num,class_num);
 for i = 1:class_num
     class_in_i_idx = labels==label_id(i);
     class_not_i_idx = labels~=label_id(i);
@@ -31,6 +34,49 @@ for i = 1:class_num
         chi_square(w,i) = chi_square(w,i)/((A_contain_w_in_class+B_contain_w_not_in_class)*(C_not_contain_w_in_class+D_not_contain_w_not_in_class));
     end
 end
+[~,word_idx] = sort(chi_square,'descend');
+select_words = word_idx(1:num_per_class,:);
+chi_square_ids = unique(select_words);
+
+% ------------ choose the global visual words by info gain ---------------%
+info_gain = zeros(words_num,1);
+% the info gain IG(term) = H(C)-H(C|T);
+% H(C) is the entropy of the system
+% H(C|T) is the condition entroy with the term T
+H_class = computeEntropy(labels);
+prob_words = sum(boolArray,2)/img_num;
+prob_not_words = 1-prob_words;
+for w = 1:words_num
+    prob_w = prob_words(w);
+    prob_not_w = prob_not_words(w);
+    w_bool = boolArray(w,:);
+    labels_with_w = labels(w_bool);
+    labels_not_w = labels(~w_bool);
+    entropy_with_w = computeEntropy(labels_with_w);
+    entropy_not_w = computeEntropy(labels_not_w);
+    condition_entropy = prob_w*entropy_with_w+prob_not_w*entropy_not_w;
+    info_gain(w) = H_class-condition_entropy;
+end
+num_total = sum(info_gain>0.1);
+[~,info_gain_ids] = sort(info_gain,'descend');
+info_gain_ids = info_gain_ids(1:num_total);
+
+valid_word_ids = unique([info_gain_ids;chi_square_ids]);
 
 end
+
+function entropy = computeEntropy(labels)
+    if ~isrow(labels) && ~iscolumn(labels),
+        fprintf('error input for entropy calculating in featureSelection!');
+    elseif isempty(labels),
+        entropy = 0;
+    else
+        table = tabulate(labels);
+        prob = table(:,3)/100;
+        select = prob~=0;
+        prob = prob(select);
+        entropy = -sum(prob.*log2(prob));
+    end
+end
+
 

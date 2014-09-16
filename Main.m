@@ -21,9 +21,12 @@ data_dir = fullfile(data_dir,dataname);
 dic_dir = 'data/dic';
 
 % the flag for whether to do the period or not
-skip_sift = false;
-skip_idx_sig = false;
-skip_dic_training = false;
+skip_sift = true;
+skip_idx_sig = true;
+skip_dic_training = true;
+
+
+feature_selection = false;   % add the feature selection period,if true then the spm should re-compute
 skip_spm_sig = false;
 
 %------------- calculate the sift feature for the image ------------------%
@@ -69,21 +72,35 @@ else
 end
 toc
 
-%%%%%%%%%%%%%%%%%%%%%%% Deprecated pooling method %%%%%%%%%%%%%%%%%%%%%%%%%
-%------------ spatial pyramid pooling for the image ----------------------%
-% pooling_option.pyramid = [1 2 4];
-% pooling_option.dic_dim = 200;
-% spm_sig = poolingImage(idx_database,pooling_option);
-% labels = idx_database.label;
-% % debug_sig = spm_sig;
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%------------------ select the right visual words for class --------------%
+visual_dic_size = dic_option.k;
+select_per_class = 10;
 
-% compile the spatial pyramid for the image
+if feature_selection,
+    % add the feature selection period here
+    idx_paths = idx_database.feature_path;
+    idx_labels = idx_database.label;
+    total_pic = length(idx_labels);
+    wordsAll = zeros(200,total_pic);
+    for i = 1:length(idx_paths)
+        % here the image is a image that every feature is a dictionary word
+        load(idx_paths{i});
+        wordsFreq = hist(idx_sig.data,1:visual_dic_size);
+        wordsAll(:,i) = wordsFreq';
+    end
+    select_word_ids = featureSelection(wordsAll,idx_labels,select_per_class);
+else
+    select_word_ids = [1:dic_option.k];
+end
+
+
+%---------------- compile the spatial pyramid for the image --------------%
 fprintf('The spm signature computing...\n');
 tic
 spm.suffix = '_spm';
-spm.pyramid_level = 3;
-spm.dic_wc = 200;
+spm.pyramid_level = 1;
+spm.dic_wc = length(select_word_ids);
+spm.dic_word_id = select_word_ids;
 if ~skip_spm_sig
     [spm_sig,labels] = computeSPM(idx_database,spm);
 else
@@ -139,6 +156,13 @@ fprintf('svm testing...\n');
 tic
 [predict_label,accuracy,dec_values] = svmpredict(test_label,[(1:ts_num)',ts_tr_kernel_mat],model);
 toc
+
+% tic
+% fprintf('svm linear training and testing...\n');
+% model = svmtrain(train_label, train_data, '-c 1 -g 0.07');
+% [predict_label, accuracy, prob_estimates] = svmpredict(test_label, test_data, model);
+% toc
+
 diary off
 
 
