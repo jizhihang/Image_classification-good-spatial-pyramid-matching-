@@ -15,28 +15,38 @@ label_id = unique(labels);
 class_num = length(label_id);
 boolArray = wordsAll>0;
 
-method = 'chi-square';  % method can be chi-square or info-gain
-
 % ------- choose the class related visual words by chi-square-------------%
 % the element (i,j) in this matrix is the chi-square value words(i) for class(j)
 chi_square = zeros(words_num,class_num);
 for i = 1:class_num
     class_in_i_idx = labels==label_id(i);
     class_not_i_idx = labels~=label_id(i);
+    class_i_num = sum(class_in_i_idx);
+    class_not_i_num = sum(class_not_i_idx);
     for w = 1:words_num
-        A_contain_w_in_class = sum(boolArray(w,class_in_i_idx));
-        B_contain_w_not_in_class = sum(boolArray(w,class_not_i_idx));
-        not_contain_w_array = [boolArray(1:w-1,:);boolArray(w+1:end,:)];
-        C_not_contain_w_in_class = sum(sum(not_contain_w_array(:,class_in_i_idx)));
-        D_not_contain_w_not_in_class = sum(sum(not_contain_w_array(:,class_not_i_idx)));
-        % chi-square = (AD-BC)^2/((A+B)(C+D));
-        chi_square(w,i) = (A_contain_w_in_class*D_not_contain_w_not_in_class-B_contain_w_not_in_class*C_not_contain_w_in_class)^2;
-        chi_square(w,i) = chi_square(w,i)/((A_contain_w_in_class+B_contain_w_not_in_class)*(C_not_contain_w_in_class+D_not_contain_w_not_in_class));
+        contain_w = boolArray(w,:);
+        n_contain_w = sum(contain_w);
+        if(n_contain_w==0 || n_contain_w==img_num) % if the word appear in every image
+            chi_square(w,i) = 0;
+        else
+            A_contain_w_in_class = sum(contain_w(class_in_i_idx));
+            B_contain_w_not_in_class = sum(contain_w(class_not_i_idx));
+            not_contain_w = ~contain_w;
+            C_not_contain_w_in_class = sum(not_contain_w(class_in_i_idx));
+            D_not_contain_w_not_in_class = sum(not_contain_w(class_not_i_idx));
+            % chi-square = N*(AD-BC)^2/((A+B)(C+D)(A+C)(B+D));
+            chi_square(w,i) = img_num*(A_contain_w_in_class*D_not_contain_w_not_in_class-B_contain_w_not_in_class*C_not_contain_w_in_class)^2;        
+            chi_square(w,i) = chi_square(w,i)/((A_contain_w_in_class+B_contain_w_not_in_class)*(C_not_contain_w_in_class+D_not_contain_w_not_in_class)*class_i_num*class_not_i_num);
+        end
     end
 end
+min(chi_square)
+max(chi_square)
+disp('debug');
 [~,word_idx] = sort(chi_square,'descend');
 select_words = word_idx(1:num_per_class,:);
 chi_square_ids = unique(select_words);
+
 
 % ------------ choose the global visual words by info gain ---------------%
 info_gain = zeros(words_num,1);

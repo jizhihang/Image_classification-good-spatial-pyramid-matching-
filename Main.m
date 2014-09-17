@@ -27,7 +27,7 @@ skip_dic_training = true;
 
 
 feature_selection = false;   % add the feature selection period,if true then the spm should re-compute
-skip_spm_sig = false;
+skip_spm_sig = true;
 
 %------------- calculate the sift feature for the image ------------------%
 fprintf('The feature extraction...\n');
@@ -75,6 +75,7 @@ toc
 %------------------ select the right visual words for class --------------%
 visual_dic_size = dic_option.k;
 select_per_class = 10;
+
 
 if feature_selection,
     % add the feature selection period here
