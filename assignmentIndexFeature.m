@@ -5,13 +5,12 @@ idx_database = database;
 idx_database.feature_path = {};
 suffix = assignment_option.suffix;
 dictionary = assignment_option.dictionary;
-num_vac = size(dictionary,1);
 
 for i = 1:length(database.feature_path)
     feature_path = database.feature_path{i};
     load(feature_path);
     [dir_path,name,~] = fileparts(feature_path);
-    idx_path = fullfile(dir_path,[name,'_',num2str(num_vac),suffix,'.mat']);
+    idx_path = fullfile(dir_path,[name,suffix,'.mat']);
     idx_sig.x = feature.x;
     idx_sig.y = feature.y;
     idx_sig.width = feature.width;

@@ -1,4 +1,4 @@
-function valid_word_ids = featureSelection( wordsAll,labels,num_per_class)
+function valid_word_ids = featureSelection( wordsAll,labels)
 % This is the visual feature selection using chi-square
 % details at http://www.blogjava.net/zhenandaci/archive/2008/08/31/225966.html
 % 
@@ -40,12 +40,17 @@ for i = 1:class_num
         end
     end
 end
-min(chi_square)
-max(chi_square)
-disp('debug');
-[~,word_idx] = sort(chi_square,'descend');
-select_words = word_idx(1:num_per_class,:);
-chi_square_ids = unique(select_words);
+
+chi_threshhold = 3.84;  % when df=1 in chi-square ,get this value from chi-test form
+word_id = [1:words_num]';
+word_id = repmat(word_id,1,class_num);
+chi_square_ids =unique(word_id(chi_square>chi_threshhold));
+
+% descend the word and get the salient 10 for each
+% num_per_class = 10; % need to be changed
+% [~,word_idx] = sort(chi_square,'descend');
+% select_words = word_idx(1:num_per_class,:);
+% chi_square_ids = unique(select_words);
 
 
 % ------------ choose the global visual words by info gain ---------------%

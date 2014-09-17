@@ -21,13 +21,12 @@ data_dir = fullfile(data_dir,dataname);
 dic_dir = 'data/dic';
 
 % the flag for whether to do the period or not
-skip_sift = true;
-skip_idx_sig = true;
-skip_dic_training = true;
+skip_sift = false;
+skip_idx_sig = false;
+skip_dic_training = false;
 
-
-feature_selection = false;   % add the feature selection period,if true then the spm should re-compute
-skip_spm_sig = true;
+% feature_selection = false;   % add the feature selection period,if true then the spm should re-compute
+skip_spm_sig = false;
 
 %------------- calculate the sift feature for the image ------------------%
 fprintf('The feature extraction...\n');
@@ -46,8 +45,8 @@ fprintf('The dictionary training...\n');
 tic
 dic_option.max_num = 100000;
 dic_option.dic_img_num = 50;
-dic_option.k = 200;
-dic_option.max_iters = 50;
+dic_option.k = 400;
+dic_option.max_iters = 100;
 dic_path = fullfile(dic_dir,[dataname,'_',num2str(dic_option.max_num),'_',num2str(dic_option.k),feature_option.suffix,'.mat']);
 if ~isdir(dic_dir)
     mkdir(dic_dir);
@@ -73,26 +72,34 @@ end
 toc
 
 %------------------ select the right visual words for class --------------%
-visual_dic_size = dic_option.k;
-select_per_class = 10;
 
 
-if feature_selection,
-    % add the feature selection period here
-    idx_paths = idx_database.feature_path;
-    idx_labels = idx_database.label;
-    total_pic = length(idx_labels);
-    wordsAll = zeros(200,total_pic);
-    for i = 1:length(idx_paths)
-        % here the image is a image that every feature is a dictionary word
-        load(idx_paths{i});
-        wordsFreq = hist(idx_sig.data,1:visual_dic_size);
-        wordsAll(:,i) = wordsFreq';
-    end
-    select_word_ids = featureSelection(wordsAll,idx_labels,select_per_class);
-else
-    select_word_ids = [1:dic_option.k];
-end
+
+% dictionary re-train and index re-assignment
+tic
+fprintf('Dictionary re-training...\n');
+DictionaryRetrain;
+toc
+
+% visual_dic_size = dic_option.k;
+% if feature_selection,
+%     % add the feature selection period here
+%     idx_paths = idx_database.feature_path;
+%     idx_labels = idx_database.label;
+%     total_pic = length(idx_labels);
+%     wordsAll = zeros(200,total_pic);
+%     for i = 1:length(idx_paths)
+%         % here the image is a image that every feature is a dictionary word
+%         load(idx_paths{i});
+%         wordsFreq = hist(idx_sig.data,1:visual_dic_size);
+%         wordsAll(:,i) = wordsFreq';
+%     end
+%     select_word_ids = featureSelection(wordsAll,idx_labels);
+% else
+%     select_word_ids = [1:dic_option.k];
+% end
+
+
 
 
 %---------------- compile the spatial pyramid for the image --------------%
@@ -127,7 +134,7 @@ test_data = zeros(num_sig-tr_num_per_class*idx_database.num_class,sig_dim);
 train_label = zeros(tr_num_per_class*idx_database.num_class,1);
 test_label = zeros(num_sig-tr_num_per_class*idx_database.num_class,1);
 
-ts_idx = 1;
+ts_idx = 100;
 for i = 1:idx_database.num_class
     class_idx = labels==i;
     class_data = spm_sig(class_idx,:);
